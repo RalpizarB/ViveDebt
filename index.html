@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monthly Payments Tool</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    .input-row {
+      margin-bottom: 1rem;
+    }
+    .input-row input {
+      margin-right: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Monthly Payments Tool</h1>
+  <div class="input-row">
+    <input type="text" id="description" placeholder="Description">
+    <input type="number" id="amount" placeholder="Amount">
+    <input type="date" id="date">
+    <input type="number" id="months" placeholder="Months">
+    <button onclick="addPurchase()">Add Purchase</button>
+  </div>
+  <div id="table-container"></div>
+
+  <script>
+    const purchases = [];
+
+    function formatDate(date) {
+      return date.toISOString().split('T')[0];
+    }
+
+    function addPurchase() {
+      const desc = document.getElementById('description').value;
+      const amt = parseFloat(document.getElementById('amount').value);
+      const date = document.getElementById('date').value;
+      const months = parseInt(document.getElementById('months').value);
+
+      if (!desc || !amt || !date || !months) return alert("Fill all fields");
+
+      purchases.push({ description: desc, amount: amt, date, months });
+      renderTable();
+    }
+
+    function renderTable() {
+      const container = document.getElementById('table-container');
+      container.innerHTML = "";
+
+      if (purchases.length === 0) return;
+
+      const today = new Date();
+      const allDates = purchases.flatMap(p => {
+        return Array.from({ length: p.months }, (_, i) => {
+          const d = new Date(p.date);
+          d.setMonth(d.getMonth() + i);
+          return formatDate(d);
+        });
+      });
+
+      const uniqueDates = [...new Set(allDates)].sort();
+
+      let html = '<table><thead><tr><th>Description</th>';
+      uniqueDates.forEach(d => html += `<th>${d}</th>`);
+      html += '</tr></thead><tbody>';
+
+      const totals = new Array(uniqueDates.length).fill(0);
+
+      purchases.forEach(p => {
+        html += `<tr><td>${p.description}</td>`;
+        const startDate = new Date(p.date);
+        const payment = (p.amount / p.months).toFixed(2);
+
+        uniqueDates.forEach(dateStr => {
+          const d = new Date(dateStr);
+          const diff = (d.getFullYear() - startDate.getFullYear()) * 12 + (d.getMonth() - startDate.getMonth());
+          if (diff >= 0 && diff < p.months) {
+            html += `<td>${payment}</td>`;
+            totals[uniqueDates.indexOf(dateStr)] += parseFloat(payment);
+          } else {
+            html += `<td>0.00</td>`;
+          }
+        });
+
+        html += '</tr>';
+      });
+
+      html += '<tr><td><strong>Total</strong></td>';
+      totals.forEach(t => html += `<td><strong>${t.toFixed(2)}</strong></td>`);
+      html += '</tr></tbody></table>';
+
+      container.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
